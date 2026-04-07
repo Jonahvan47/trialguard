@@ -71,7 +71,6 @@ function UpgradeSheet({ onClose }) {
         cancelUrl: window.location.href,
       });
       if (error) {
-        // Fallback: simulate upgrade for demo
         setDone(true);
         setTimeout(() => {
           localStorage.setItem("tg_premium", "true");
@@ -79,7 +78,6 @@ function UpgradeSheet({ onClose }) {
         }, 1500);
       }
     } catch (e) {
-      // Demo mode: just mark as premium
       setDone(true);
       setTimeout(() => {
         localStorage.setItem("tg_premium", "true");
@@ -100,17 +98,14 @@ function UpgradeSheet({ onClose }) {
         padding: "24px 20px 44px", boxSizing: "border-box",
       }} onClick={e => e.stopPropagation()}>
         <div style={{ width: 36, height: 4, background: "#333", borderRadius: 99, margin: "0 auto 20px" }} />
-
         <div style={{ textAlign: "center", marginBottom: 24 }}>
           <div style={{ fontSize: 40, marginBottom: 8 }}>🛡️</div>
           <div style={{ fontSize: 22, fontWeight: 800, color: "#f5f5f5" }}>Upgrade to Premium</div>
           <div style={{ fontSize: 14, color: "#666", marginTop: 6 }}>You've reached the 3 trial limit</div>
         </div>
-
-        {/* Features */}
         {[
           { icon: "♾️", text: "Track unlimited free trials" },
-          { icon: "⚡", text: "Instant cancel deadline alerts" },
+          { icon: "📧", text: "Email reminders 2 days before charge" },
           { icon: "🔗", text: "Direct cancel links for every service" },
           { icon: "📊", text: "Track your estimated savings" },
         ].map(({ icon, text }) => (
@@ -123,7 +118,6 @@ function UpgradeSheet({ onClose }) {
             <span style={{ marginLeft: "auto", color: "#00aa55", fontSize: 16 }}>✓</span>
           </div>
         ))}
-
         <div style={{
           background: "#1a1a1a", borderRadius: 12,
           padding: "16px", textAlign: "center", margin: "20px 0",
@@ -131,16 +125,14 @@ function UpgradeSheet({ onClose }) {
           <div style={{ fontSize: 32, fontWeight: 800, color: "#f5f5f5" }}>$4.99</div>
           <div style={{ fontSize: 12, color: "#666" }}>per month • cancel anytime</div>
         </div>
-
         <button onClick={handlePayment} disabled={loading || done} style={{
-          width: "100%", background: done ? "#00aa55" : "#00aa55",
+          width: "100%", background: "#00aa55",
           color: "#000", fontWeight: 800, fontSize: 16, padding: "16px",
           border: "none", borderRadius: 12, cursor: "pointer",
           fontFamily: "system-ui", opacity: loading ? 0.7 : 1,
         }}>
           {done ? "✓ Upgraded!" : loading ? "Processing..." : `Upgrade for $4.99/month`}
         </button>
-
         <div style={{ textAlign: "center", fontSize: 11, color: "#444", marginTop: 10 }}>
           Secure payment via Stripe • Cancel anytime
         </div>
@@ -169,6 +161,7 @@ function TrialCard({ trial, onDelete }) {
           <div>
             <div style={{ fontSize: 16, fontWeight: 700, color: "#f5f5f5" }}>{trial.service}</div>
             {trial.note && <div style={{ fontSize: 12, color: "#666", marginTop: 1 }}>{trial.note}</div>}
+            {trial.email && <div style={{ fontSize: 11, color: "#444", marginTop: 1 }}>📧 {trial.email}</div>}
           </div>
         </div>
         <span style={{
@@ -177,7 +170,6 @@ function TrialCard({ trial, onDelete }) {
           padding: "3px 8px", borderRadius: 99,
         }}>{s.label}</span>
       </div>
-
       <div style={{ height: 3, background: "#ffffff10", borderRadius: 99, overflow: "hidden", margin: "12px 0 6px" }}>
         <div style={{
           height: "100%",
@@ -185,18 +177,15 @@ function TrialCard({ trial, onDelete }) {
           background: s.bar, borderRadius: 99,
         }} />
       </div>
-
       <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11, color: "#666" }}>
         <span>Cancel by <span style={{ color: s.bar, fontWeight: 700 }}>{formatDate(safeDate)}</span></span>
         <span>Ends <span style={{ color: "#888" }}>{formatDate(trial.endDate)}</span></span>
       </div>
-
       {svc.warn && (
         <div style={{ fontSize: 11, color: "#ff9500", marginTop: 8, padding: "4px 8px", background: "#ff950011", borderRadius: 6 }}>
           ⚠ {svc.warn}
         </div>
       )}
-
       <div style={{ display: "flex", gap: 8, marginTop: 12 }}>
         {svc.cancelUrl ? (
           <a href={svc.cancelUrl} target="_blank" rel="noopener noreferrer" style={{
@@ -215,10 +204,11 @@ function TrialCard({ trial, onDelete }) {
   );
 }
 
-function AddSheet({ onAdd, onClose }) {
+function AddSheet({ onAdd, onClose, isPremium }) {
   const [service, setService] = useState("Netflix");
   const [days, setDays] = useState(30);
   const [note, setNote] = useState("");
+  const [email, setEmail] = useState("");
 
   const endDate = (() => {
     const d = new Date();
@@ -275,7 +265,18 @@ function AddSheet({ onAdd, onClose }) {
         <div style={{ fontSize: 11, color: "#666", letterSpacing: "0.08em", marginBottom: 6 }}>NOTE (OPTIONAL)</div>
         <input type="text" placeholder="e.g. Photography plan"
           value={note} onChange={e => setNote(e.target.value)}
-          style={{ ...inputStyle, marginBottom: 16 }} />
+          style={{ ...inputStyle, marginBottom: 14 }} />
+
+        {isPremium && (
+          <>
+            <div style={{ fontSize: 11, color: "#00aa55", letterSpacing: "0.08em", marginBottom: 6 }}>
+              📧 EMAIL REMINDER (PREMIUM)
+            </div>
+            <input type="email" placeholder="your@email.com"
+              value={email} onChange={e => setEmail(e.target.value)}
+              style={{ ...inputStyle, marginBottom: 14, borderColor: "#00aa5544" }} />
+          </>
+        )}
 
         <div style={{
           background: "#1a1a1a", borderRadius: 10, padding: "12px 14px",
@@ -285,7 +286,7 @@ function AddSheet({ onAdd, onClose }) {
           <span style={{ color: "#555" }}> ({SERVICES_DB[service]?.noticeDays || 2}d before charge)</span>
         </div>
 
-        <button onClick={() => { onAdd({ id: Date.now(), service, endDate, note }); onClose(); }} style={{
+        <button onClick={() => { onAdd({ id: Date.now(), service, endDate, note, email, isPremium }); onClose(); }} style={{
           width: "100%", background: "#00aa55", color: "#000",
           fontWeight: 800, fontSize: 16, padding: "15px",
           border: "none", borderRadius: 12, cursor: "pointer",
@@ -301,9 +302,9 @@ export default function App() {
     new URLSearchParams(window.location.search).get("premium") === "true";
 
   const [trials, setTrials] = useState([
-    { id: 1, service: "Adobe Creative Cloud", endDate: "2026-04-06", note: "Photography plan" },
-    { id: 2, service: "LinkedIn Premium",      endDate: "2026-04-15", note: "Job search" },
-    { id: 3, service: "Spotify",               endDate: "2026-04-28", note: "" },
+    { id: 1, service: "Adobe Creative Cloud", endDate: "2026-04-06", note: "Photography plan", email: "", isPremium: false },
+    { id: 2, service: "LinkedIn Premium",      endDate: "2026-04-15", note: "Job search",       email: "", isPremium: false },
+    { id: 3, service: "Spotify",               endDate: "2026-04-28", note: "",                 email: "", isPremium: false },
   ]);
   const [showAdd, setShowAdd] = useState(false);
   const [showUpgrade, setShowUpgrade] = useState(false);
@@ -352,12 +353,9 @@ export default function App() {
       color: "#f5f5f5", fontFamily: "system-ui",
       paddingBottom: 100,
     }}>
-      {/* Load Stripe */}
       <script src="https://js.stripe.com/v3/" async />
-
       <div style={{ height: 12 }} />
 
-      {/* Header */}
       <div style={{ padding: "12px 20px 0" }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
           <div>
@@ -380,7 +378,6 @@ export default function App() {
           )}
         </div>
 
-        {/* Free tier banner */}
         {!isPremium && (
           <div style={{
             background: "#1a1a00", border: "1px solid #ffd60a33",
@@ -398,7 +395,6 @@ export default function App() {
           </div>
         )}
 
-        {/* Stats */}
         <div style={{ display: "flex", gap: 10, marginTop: 12 }}>
           {[
             { label: "TRACKING",   value: trials.length },
@@ -416,7 +412,6 @@ export default function App() {
         </div>
       </div>
 
-      {/* Tabs */}
       <div style={{ display: "flex", gap: 8, padding: "16px 20px 10px" }}>
         {["all", "urgent", "safe"].map(t => (
           <button key={t} onClick={() => setTab(t)} style={{
@@ -432,7 +427,6 @@ export default function App() {
         ))}
       </div>
 
-      {/* List */}
       <div style={{ padding: "0 20px" }}>
         {filtered.length === 0 ? (
           <div style={{ textAlign: "center", padding: "60px 20px", color: "#333", fontSize: 14 }}>
@@ -446,7 +440,6 @@ export default function App() {
         )}
       </div>
 
-      {/* FAB */}
       <button onClick={handleAddClick} style={{
         position: "fixed", bottom: 28,
         left: "50%", transform: "translateX(-50%)",
@@ -463,6 +456,7 @@ export default function App() {
         <AddSheet
           onAdd={handleAddTrial}
           onClose={() => setShowAdd(false)}
+          isPremium={isPremium}
         />
       )}
 
