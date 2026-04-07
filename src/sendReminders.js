@@ -1,0 +1,1 @@
+mkdir -p api && cp src/sendReminders.js api/sendReminders.js
