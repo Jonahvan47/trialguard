@@ -65,7 +65,7 @@ function UpgradeSheet({ onClose }) {
     try {
       const stripe = window.Stripe(STRIPE_KEY);
       const { error } = await stripe.redirectToCheckout({
-        lineItems: [{ price: "price_monthly_499", quantity: 1 }],
+        lineItems: [{ price: "price_1TJO2U0XoNS6g0Xn8InTkbpw", quantity: 1 }],
         mode: "subscription",
         successUrl: window.location.href + "?premium=true",
         cancelUrl: window.location.href,
