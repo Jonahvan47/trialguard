@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>TrialGuard — Never get charged for a forgotten trial</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #fff; color: #1a1a1a; }
+    nav { display: flex; justify-content: space-between; align-items: center; padding: 20px 40px; border-bottom: 1px solid #f0f0f0; }
+    .logo { font-size: 20px; font-weight: 700; color: #00aa55; }
+    .nav-btn { background: #00aa55; color: #fff; border: none; padding: 10px 22px; border-radius: 99px; font-size: 14px; font-weight: 600; cursor: pointer; text-decoration: none; }
+    .hero { text-align: center; padding: 80px 20px 60px; max-width: 700px; margin: 0 auto; }
+    .badge { display: inline-block; background: #e6f9f0; color: #007a3d; font-size: 13px; font-weight: 600; padding: 5px 16px; border-radius: 99px; margin-bottom: 24px; }
+    .hero h1 { font-size: 48px; font-weight: 800; line-height: 1.1; margin-bottom: 20px; color: #0a0a0a; }
+    .hero h1 span { color: #00aa55; }
+    .hero p { font-size: 19px; color: #555; line-height: 1.6; margin-bottom: 36px; }
+    .hero-btns { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
+    .btn-primary { background: #00aa55; color: #fff; border: none; padding: 15px 32px; border-radius: 99px; font-size: 16px; font-weight: 700; cursor: pointer; text-decoration: none; display: inline-block; }
+    .btn-secondary { background: transparent; color: #00aa55; border: 2px solid #00aa55; padding: 15px 32px; border-radius: 99px; font-size: 16px; font-weight: 700; cursor: pointer; text-decoration: none; display: inline-block; }
+    .hero-sub { font-size: 13px; color: #aaa; margin-top: 14px; }
+    .features { padding: 60px 20px; background: #f9fafb; }
+    .features h2 { text-align: center; font-size: 32px; font-weight: 800; margin-bottom: 40px; }
+    .features-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 20px; max-width: 900px; margin: 0 auto; }
+    .feature-card { background: #fff; border-radius: 16px; padding: 28px; border: 1px solid #eee; }
+    .feature-icon { font-size: 32px; margin-bottom: 14px; }
+    .feature-card h3 { font-size: 17px; font-weight: 700; margin-bottom: 8px; }
+    .feature-card p { font-size: 14px; color: #666; line-height: 1.6; }
+    .how { padding: 60px 20px; text-align: center; }
+    .how h2 { font-size: 32px; font-weight: 800; margin-bottom: 40px; }
+    .steps { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 20px; max-width: 700px; margin: 0 auto; }
+    .step { padding: 20px; }
+    .step-num { width: 44px; height: 44px; border-radius: 50%; background: #e6f9f0; color: #007a3d; font-size: 18px; font-weight: 800; display: flex; align-items: center; justify-content: center; margin: 0 auto 14px; }
+    .step h3 { font-size: 16px; font-weight: 700; margin-bottom: 6px; }
+    .step p { font-size: 14px; color: #666; line-height: 1.5; }
+    .pricing { padding: 60px 20px; background: #f9fafb; text-align: center; }
+    .pricing h2 { font-size: 32px; font-weight: 800; margin-bottom: 40px; }
+    .pricing-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 20px; max-width: 620px; margin: 0 auto; }
+    .price-card { background: #fff; border-radius: 20px; padding: 32px; border: 1px solid #eee; text-align: left; }
+    .price-card.featured { border: 2px solid #00aa55; }
+    .price-popular { background: #e6f9f0; color: #007a3d; font-size: 12px; font-weight: 700; padding: 4px 12px; border-radius: 99px; display: inline-block; margin-bottom: 16px; }
+    .price-name { font-size: 20px; font-weight: 800; margin-bottom: 6px; }
+    .price-amount { font-size: 36px; font-weight: 800; margin-bottom: 4px; }
+    .price-amount span { font-size: 15px; font-weight: 400; color: #888; }
+    .price-desc { font-size: 14px; color: #888; margin-bottom: 20px; }
+    .price-features { list-style: none; margin-bottom: 24px; }
+    .price-features li { font-size: 14px; color: #444; padding: 7px 0; border-bottom: 1px solid #f5f5f5; display: flex; align-items: center; gap: 10px; }
+    .check { color: #00aa55; font-weight: 700; }
+    .price-btn { width: 100%; padding: 13px; border-radius: 99px; font-size: 15px; font-weight: 700; cursor: pointer; border: 2px solid #00aa55; background: transparent; color: #00aa55; }
+    .price-btn.primary { background: #00aa55; color: #fff; border: none; }
+    .email-section { padding: 60px 20px; text-align: center; background: #0a0a0a; color: #fff; }
+    .email-section h2 { font-size: 28px; font-weight: 800; margin-bottom: 10px; }
+    .email-section p { font-size: 16px; color: #aaa; margin-bottom: 28px; }
+    .email-form { display: flex; gap: 10px; max-width: 440px; margin: 0 auto; flex-wrap: wrap; justify-content: center; }
+    .email-form input { flex: 1; min-width: 200px; padding: 14px 20px; border: 1px solid #333; border-radius: 99px; font-size: 15px; background: #1a1a1a; color: #fff; outline: none; }
+    .email-form button { padding: 14px 28px; background: #00aa55; color: #fff; border: none; border-radius: 99px; font-size: 15px; font-weight: 700; cursor: pointer; }
+    footer { padding: 30px 20px; text-align: center; border-top: 1px solid #f0f0f0; }
+    footer p { font-size: 13px; color: #aaa; }
+    @media (max-width: 600px) { .hero h1 { font-size: 32px; } nav { padding: 16px 20px; } }
+  </style>
+</head>
+<body>
+
+<nav>
+  <div class="logo">🛡️ TrialGuard</div>
+  <a href="https://bit.ly/Trialguard" class="nav-btn">Try for free</a>
+</nav>
+
+<div class="hero">
+  <div class="badge">Free to start — no credit card needed</div>
+  <h1>Never get charged<br>for a <span>forgotten trial</span></h1>
+  <p>TrialGuard tracks your free trials and reminds you before you get charged. Set it up in seconds.</p>
+  <div class="hero-btns">
+    <a href="https://bit.ly/Trialguard" class="btn-primary">Start tracking for free</a>
+    <a href="#pricing" class="btn-secondary">See pricing</a>
+  </div>
+  <p class="hero-sub">Free plan available • Upgrade anytime • Cancel anytime</p>
+</div>
+
+<div class="features">
+  <h2>Everything you need</h2>
+  <div class="features-grid">
+    <div class="feature-card">
+      <div class="feature-icon">⏰</div>
+      <h3>Smart reminders</h3>
+      <p>Get alerted before your trial expires so you never get charged by surprise.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">🔗</div>
+      <h3>Direct cancel links</h3>
+      <p>One tap to cancel any subscription. No hunting through settings menus.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">📊</div>
+      <h3>Track your savings</h3>
+      <p>See exactly how much money you've saved by staying on top of your trials.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">🛡️</div>
+      <h3>20+ services covered</h3>
+      <p>Netflix, Spotify, Adobe, LinkedIn and many more — all pre-loaded.</p>
+    </div>
+  </div>
+</div>
+
+<div class="how">
+  <h2>How it works</h2>
+  <div class="steps">
+    <div class="step">
+      <div class="step-num">1</div>
+      <h3>Add your trial</h3>
+      <p>Pick the service and how long the trial lasts</p>
+    </div>
+    <div class="step">
+      <div class="step-num">2</div>
+      <h3>We track it</h3>
+      <p>TrialGuard calculates your safe cancel deadline automatically</p>
+    </div>
+    <div class="step">
+      <div class="step-num">3</div>
+      <h3>Cancel in time</h3>
+      <p>One tap takes you straight to the cancel page before you're charged</p>
+    </div>
+  </div>
+</div>
+
+<div class="pricing" id="pricing">
+  <h2>Simple pricing</h2>
+  <div class="pricing-grid">
+    <div class="price-card">
+      <div class="price-name">Free</div>
+      <div class="price-amount">$0 <span>forever</span></div>
+      <div class="price-desc">Perfect for getting started</div>
+      <ul class="price-features">
+        <li><span class="check">✓</span> Track up to 3 trials</li>
+        <li><span class="check">✓</span> Direct cancel links</li>
+        <li><span class="check">✓</span> Cancel deadline alerts</li>
+      </ul>
+      <button class="price-btn" onclick="window.location.href='https://bit.ly/Trialguard'">Get started free</button>
+    </div>
+    <div class="price-card featured">
+      <div class="price-popular">Most popular</div>
+      <div class="price-name">Premium</div>
+      <div class="price-amount">$4.99 <span>/month</span></div>
+      <div class="price-desc">For power users and deal hunters</div>
+      <ul class="price-features">
+        <li><span class="check">✓</span> Unlimited trial tracking</li>
+        <li><span class="check">✓</span> Everything in Free</li>
+        <li><span class="check">✓</span> Priority support</li>
+        <li><span class="check">✓</span> Cancel anytime</li>
+      </ul>
+      <button class="price-btn primary" onclick="window.location.href='https://bit.ly/Trialguard'">Upgrade to Premium</button>
+    </div>
+  </div>
+</div>
+
+<div class="email-section">
+  <h2>Stay in the loop</h2>
+  <p>Get tips on saving money and never missing a trial deadline.</p>
+  <div class="email-form">
+    <input type="email" placeholder="your@email.com" />
+    <button>Subscribe</button>
+  </div>
+</div>
+
+<footer>
+  <p>© 2026 TrialGuard · mytrialguard.com · Never get charged by accident again</p>
+</footer>
+
+</body>
+</html>
