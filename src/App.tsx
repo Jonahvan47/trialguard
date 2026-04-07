@@ -1,6 +1,6 @@
 import { useState } from "react";
 
-const STRIPE_KEY = "pk_test_51TDd2k0XoNS6g0XnVibixoQPejFYikdaOgnP0FyDGmwsEYYR4jok9h0XJzDZnf99Z3CLcCOay4dcsxg8orok0ZAH00oM1cWWcm";
+const STRIPE_KEY = "pk_live_51TDd250ERr1m1Z0vtQuRqkEFE9Ki2GARGvHYoTnDXaCCJALQIuN8a4PZIl3mN1NqNNw4k9WQk7YhgYX089wd1qQ700BSze6G6X";
 const FREE_LIMIT = 3;
 const PRICE = "$4.99/month";
 
@@ -65,7 +65,7 @@ function UpgradeSheet({ onClose }) {
     try {
       const stripe = window.Stripe(STRIPE_KEY);
       const { error } = await stripe.redirectToCheckout({
-        lineItems: [{ price: "price_1TJO2U0XoNS6g0Xn8InTkbpw", quantity: 1 }],
+        lineItems: [{ price: "price_1TJRNv0ERr1m1Z0v8Qb7xkR5", quantity: 1 }],
         mode: "subscription",
         successUrl: window.location.href + "?premium=true",
         cancelUrl: window.location.href,
