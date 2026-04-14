@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">TrialGuard</string>
+    <string name="title_activity_main">TrialGuard</string>
+    <string name="package_name">com.mytrialguard.app</string>
+    <string name="custom_url_scheme">com.mytrialguard.app</string>
+</resources>
