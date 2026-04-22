@@ -145,10 +145,10 @@ function UpgradeSheet({ onClose }) {
 
 function TrialCard({ trial, onDelete }) {
   const svc = SERVICES_DB[trial.service] || SERVICES_DB["Other"];
-  const { daysToSafe } = getDaysLeft(trial.endDate, svc.noticeDays);
+  const { daysToSafe } = getDaysLeft(trial.end_date, svc.noticeDays);
   const status = getStatus(daysToSafe);
   const s = STATUS[status];
-  const safeDate = new Date(trial.endDate);
+  const safeDate = new Date(trial.end_date);
   safeDate.setDate(safeDate.getDate() - svc.noticeDays);
 
   return (
@@ -181,7 +181,7 @@ function TrialCard({ trial, onDelete }) {
       </div>
       <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11, color: "#666" }}>
         <span>Cancel by <span style={{ color: s.bar, fontWeight: 700 }}>{formatDate(safeDate)}</span></span>
-        <span>Ends <span style={{ color: "#888" }}>{formatDate(trial.endDate)}</span></span>
+        <span>Ends <span style={{ color: "#888" }}>{formatDate(trial.end_date)}</span></span>
       </div>
       {svc.warn && (
         <div style={{ fontSize: 11, color: "#ff9500", marginTop: 8, padding: "4px 8px", background: "#ff950011", borderRadius: 6 }}>
@@ -288,7 +288,7 @@ function AddSheet({ onAdd, onClose, isPremium }) {
           <span style={{ color: "#555" }}> ({SERVICES_DB[service]?.noticeDays || 2}d before charge)</span>
         </div>
 
-        <button onClick={() => { onAdd({ id: Date.now(), service, endDate, note, email, isPremium }); onClose(); }} style={{
+        <button onClick={() => { onAdd({ service, end_date: endDate, note, email }); onClose(); }} style={{
           width: "100%", background: "#00aa55", color: "#000",
           fontWeight: 800, fontSize: 16, padding: "15px",
           border: "none", borderRadius: 12, cursor: "pointer",
@@ -303,11 +303,7 @@ export default function App() {
   const isPremium = localStorage.getItem("tg_premium") === "true" ||
     new URLSearchParams(window.location.search).get("premium") === "true";
 
-  const [trials, setTrials] = useState([
-    { id: 1, service: "Adobe Creative Cloud", endDate: "2026-04-06", note: "Photography plan", email: "", isPremium: false },
-    { id: 2, service: "LinkedIn Premium",      endDate: "2026-04-15", note: "Job search",       email: "", isPremium: false },
-    { id: 3, service: "Spotify",               endDate: "2026-04-28", note: "",                 email: "", isPremium: false },
-  ]);
+  const [trials, setTrials] = useState<any[]>([]);
   const [showAdd, setShowAdd] = useState(false);
   const [showUpgrade, setShowUpgrade] = useState(false);
   const [tab, setTab] = useState("all");
@@ -319,17 +315,32 @@ export default function App() {
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
       setAuthLoading(false);
-      if (session) loadTrialCount(session.user.id);
+      if (session) {
+        loadTrials(session.user.id);
+        loadTrialCount(session.user.id);
+      }
     });
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setSession(session);
-      if (session) loadTrialCount(session.user.id);
+      if (session) {
+        loadTrials(session.user.id);
+        loadTrialCount(session.user.id);
+      }
     });
     return () => subscription.unsubscribe();
   }, []);
 
-  async function loadTrialCount(userId: string) {
+  async function loadTrials(userId: string) {
     const { data, error } = await supabase
+      .from("trials")
+      .select("*")
+      .eq("user_id", userId)
+      .order("end_date", { ascending: true });
+    if (data) setTrials(data);
+  }
+
+  async function loadTrialCount(userId: string) {
+    const { data } = await supabase
       .from("user_trials")
       .select("trial_count")
       .eq("user_id", userId)
@@ -337,41 +348,37 @@ export default function App() {
     if (data) {
       setTrialCount(data.trial_count);
     } else {
-      // No row yet — insert one with count 0
       await supabase.from("user_trials").insert({ user_id: userId, trial_count: 0 });
       setTrialCount(0);
     }
   }
 
-  async function incrementTrialCount(userId: string) {
-    const newCount = trialCount + 1;
+  async function updateTrialCount(userId: string, count: number) {
     await supabase
       .from("user_trials")
-      .update({ trial_count: newCount })
+      .update({ trial_count: count })
       .eq("user_id", userId);
-    setTrialCount(newCount);
-  }
-
-  async function decrementTrialCount(userId: string) {
-    const newCount = Math.max(0, trialCount - 1);
-    await supabase
-      .from("user_trials")
-      .update({ trial_count: newCount })
-      .eq("user_id", userId);
-    setTrialCount(newCount);
+    setTrialCount(count);
   }
 
   const handleSignOut = async () => {
     await supabase.auth.signOut();
   };
 
-  async function handleAddTrial(trial) {
+  async function handleAddTrial(trial: any) {
     if (!isPremium && trialCount >= FREE_LIMIT) {
       setShowUpgrade(true);
       return;
     }
-    setTrials(prev => [...prev, trial]);
-    if (session) await incrementTrialCount(session.user.id);
+    const { data, error } = await supabase
+      .from("trials")
+      .insert({ ...trial, user_id: session.user.id })
+      .select()
+      .single();
+    if (data) {
+      setTrials(prev => [...prev, data]);
+      await updateTrialCount(session.user.id, trialCount + 1);
+    }
   }
 
   const handleAddClick = () => {
@@ -382,20 +389,21 @@ export default function App() {
     setShowAdd(true);
   };
 
-  const handleDelete = async (id: number) => {
+  const handleDelete = async (id: string) => {
+    await supabase.from("trials").delete().eq("id", id);
     setTrials(prev => prev.filter(x => x.id !== id));
-    if (session) await decrementTrialCount(session.user.id);
+    await updateTrialCount(session.user.id, Math.max(0, trialCount - 1));
   };
 
   const sorted = [...trials].sort((a, b) => {
     const sa = SERVICES_DB[a.service] || SERVICES_DB["Other"];
     const sb = SERVICES_DB[b.service] || SERVICES_DB["Other"];
-    return getDaysLeft(a.endDate, sa.noticeDays).daysToSafe - getDaysLeft(b.endDate, sb.noticeDays).daysToSafe;
+    return getDaysLeft(a.end_date, sa.noticeDays).daysToSafe - getDaysLeft(b.end_date, sb.noticeDays).daysToSafe;
   });
 
   const filtered = sorted.filter(t => {
     const s = SERVICES_DB[t.service] || SERVICES_DB["Other"];
-    const { daysToSafe } = getDaysLeft(t.endDate, s.noticeDays);
+    const { daysToSafe } = getDaysLeft(t.end_date, s.noticeDays);
     const status = getStatus(daysToSafe);
     if (tab === "urgent") return status === "critical" || status === "expired";
     if (tab === "safe")   return status === "safe" || status === "warning";
@@ -404,10 +412,10 @@ export default function App() {
 
   const urgentCount = trials.filter(t => {
     const s = SERVICES_DB[t.service] || SERVICES_DB["Other"];
-    return ["critical","expired"].includes(getStatus(getDaysLeft(t.endDate, s.noticeDays).daysToSafe));
+    return ["critical","expired"].includes(getStatus(getDaysLeft(t.end_date, s.noticeDays).daysToSafe));
   }).length;
 
-  if (authLoading) return <div>Loading...</div>;
+  if (authLoading) return <div style={{ color: "#fff", padding: 20 }}>Loading...</div>;
   if (!session) return <AuthPage />;
 
   return (
