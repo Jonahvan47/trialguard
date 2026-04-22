@@ -1,4 +1,6 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { supabase } from "./supabaseClient";
+import AuthPage from "./AuthPage";
 
 const STRIPE_KEY = "pk_live_51TDd250ERr1m1Z0vtQuRqkEFE9Ki2GARGvHYoTnDXaCCJALQIuN8a4PZIl3mN1NqNNw4k9WQk7YhgYX089wd1qQ700BSze6G6X";
 const FREE_LIMIT = 3;
@@ -309,21 +311,80 @@ export default function App() {
   const [showAdd, setShowAdd] = useState(false);
   const [showUpgrade, setShowUpgrade] = useState(false);
   const [tab, setTab] = useState("all");
+  const [session, setSession] = useState<any>(null);
+  const [authLoading, setAuthLoading] = useState(true);
+  const [trialCount, setTrialCount] = useState(0);
 
-  const handleAddTrial = (trial) => {
-    if (!isPremium && trials.length >= FREE_LIMIT) {
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session);
+      setAuthLoading(false);
+      if (session) loadTrialCount(session.user.id);
+    });
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setSession(session);
+      if (session) loadTrialCount(session.user.id);
+    });
+    return () => subscription.unsubscribe();
+  }, []);
+
+  async function loadTrialCount(userId: string) {
+    const { data, error } = await supabase
+      .from("user_trials")
+      .select("trial_count")
+      .eq("user_id", userId)
+      .single();
+    if (data) {
+      setTrialCount(data.trial_count);
+    } else {
+      // No row yet — insert one with count 0
+      await supabase.from("user_trials").insert({ user_id: userId, trial_count: 0 });
+      setTrialCount(0);
+    }
+  }
+
+  async function incrementTrialCount(userId: string) {
+    const newCount = trialCount + 1;
+    await supabase
+      .from("user_trials")
+      .update({ trial_count: newCount })
+      .eq("user_id", userId);
+    setTrialCount(newCount);
+  }
+
+  async function decrementTrialCount(userId: string) {
+    const newCount = Math.max(0, trialCount - 1);
+    await supabase
+      .from("user_trials")
+      .update({ trial_count: newCount })
+      .eq("user_id", userId);
+    setTrialCount(newCount);
+  }
+
+  const handleSignOut = async () => {
+    await supabase.auth.signOut();
+  };
+
+  async function handleAddTrial(trial) {
+    if (!isPremium && trialCount >= FREE_LIMIT) {
       setShowUpgrade(true);
       return;
     }
     setTrials(prev => [...prev, trial]);
-  };
+    if (session) await incrementTrialCount(session.user.id);
+  }
 
   const handleAddClick = () => {
-    if (!isPremium && trials.length >= FREE_LIMIT) {
+    if (!isPremium && trialCount >= FREE_LIMIT) {
       setShowUpgrade(true);
       return;
     }
     setShowAdd(true);
+  };
+
+  const handleDelete = async (id: number) => {
+    setTrials(prev => prev.filter(x => x.id !== id));
+    if (session) await decrementTrialCount(session.user.id);
   };
 
   const sorted = [...trials].sort((a, b) => {
@@ -346,6 +407,9 @@ export default function App() {
     return ["critical","expired"].includes(getStatus(getDaysLeft(t.endDate, s.noticeDays).daysToSafe));
   }).length;
 
+  if (authLoading) return <div>Loading...</div>;
+  if (!session) return <AuthPage />;
+
   return (
     <div style={{
       maxWidth: 430, margin: "0 auto",
@@ -362,20 +426,28 @@ export default function App() {
             <div style={{ fontSize: 11, color: "#00aa55", letterSpacing: "0.12em" }}>🛡️ TRIALGUARD</div>
             <div style={{ fontSize: 26, fontWeight: 800, letterSpacing: "-0.02em", lineHeight: 1.2 }}>My Trials</div>
           </div>
-          {isPremium ? (
-            <div style={{
-              background: "#00aa5522", border: "1px solid #00aa5544",
-              color: "#00aa55", fontSize: 11, fontWeight: 700,
-              padding: "6px 12px", borderRadius: 99,
-            }}>⭐ PREMIUM</div>
-          ) : (
-            <button onClick={() => setShowUpgrade(true)} style={{
-              background: "#00aa5522", border: "1px solid #00aa5544",
-              color: "#00aa55", fontSize: 11, fontWeight: 700,
+          <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+            {isPremium ? (
+              <div style={{
+                background: "#00aa5522", border: "1px solid #00aa5544",
+                color: "#00aa55", fontSize: 11, fontWeight: 700,
+                padding: "6px 12px", borderRadius: 99,
+              }}>⭐ PREMIUM</div>
+            ) : (
+              <button onClick={() => setShowUpgrade(true)} style={{
+                background: "#00aa5522", border: "1px solid #00aa5544",
+                color: "#00aa55", fontSize: 11, fontWeight: 700,
+                padding: "6px 12px", borderRadius: 99, cursor: "pointer",
+                fontFamily: "system-ui",
+              }}>Upgrade ✦</button>
+            )}
+            <button onClick={handleSignOut} style={{
+              background: "#1a1a1a", border: "1px solid #2a2a2a",
+              color: "#666", fontSize: 11, fontWeight: 600,
               padding: "6px 12px", borderRadius: 99, cursor: "pointer",
               fontFamily: "system-ui",
-            }}>Upgrade ✦</button>
-          )}
+            }}>Sign Out</button>
+          </div>
         </div>
 
         {!isPremium && (
@@ -385,7 +457,7 @@ export default function App() {
             display: "flex", alignItems: "center", justifyContent: "space-between",
           }}>
             <div style={{ fontSize: 12, color: "#ffd60a" }}>
-              Free plan: {trials.length}/{FREE_LIMIT} trials used
+              Free plan: {trialCount}/{FREE_LIMIT} trials used
             </div>
             <button onClick={() => setShowUpgrade(true)} style={{
               background: "#ffd60a", color: "#000", fontSize: 11,
@@ -434,8 +506,7 @@ export default function App() {
           </div>
         ) : (
           filtered.map(t => (
-            <TrialCard key={t.id} trial={t}
-              onDelete={id => setTrials(prev => prev.filter(x => x.id !== id))} />
+            <TrialCard key={t.id} trial={t} onDelete={handleDelete} />
           ))
         )}
       </div>
